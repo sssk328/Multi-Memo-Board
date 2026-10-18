@@ -383,7 +383,7 @@ const placeEl=(d,e)=>{d.style.left=(e.x-B.x0)+'px';d.style.top=(e.y-B.y0)+'px';i
 if(e.t=='txt'){txRender(d,e,e,1);if(d.isConnected){const w=d.offsetWidth,h=d.offsetHeight;if(w&&(w!=e.w||h!=e.h)){e.x+=(e.w-w)/2;e.y+=(e.h-h)/2;e.w=w;e.h=h;d.style.left=(e.x-B.x0)+'px';d.style.top=(e.y-B.y0)+'px'}}}
 else if(e.tx||d.querySelector(':scope>.xt'))txRender(d,e,e.tx)}};
 const blit=()=>{cx.save();cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,cx.canvas.width,cx.canvas.height);cx.drawImage(base,0,0);cx.restore()};
-function redraw(){bx.save();bx.setTransform(1,0,0,1,0,0);bx.clearRect(0,0,base.width,base.height);bx.restore();B.strokes.forEach(s=>ds(bx,s));blit()}
+function redraw(){bx.save();bx.setTransform(1,0,0,1,0,0);bx.clearRect(0,0,base.width,base.height);bx.restore();drawStrokes(bx,B.strokes);blit()}
 /* history (stroke / memo / note) */
 const HM={},hist=o=>{HU.push(o);if(HU.length>500)HU.shift();RS.length=0};
 const addEl=e=>{B.els.push(e);$('#clip').insertBefore(mk(e),$('#cv'));hist({k:'a',e});save()};
@@ -600,7 +600,10 @@ o.addEventListener('pointerup',()=>{if(dn)end(1)});o.addEventListener('pointerca
 const inv=(X,Y)=>{const c=Math.cos(V.r||0),n=Math.sin(V.r||0),dx=X-V.x,dy=Y-V.y;return[(dx*c+dy*n)/V.s,(-dx*n+dy*c)/V.s]};
 const fwd=(q,sc,r)=>{const c=Math.cos(r),n=Math.sin(r);return[(q[0]*c-q[1]*n)*sc,(q[0]*n+q[1]*c)*sc]};
 const d2s=(dx,dy)=>{const c=Math.cos(V.r||0),n=Math.sin(V.r||0);return[(dx*c+dy*n)/V.s,(-dx*n+dy*c)/V.s]};
-function ds(c,s){if(s.t=='pen'&&s.pk&&s.pk!='pen'&&s.p.length)return penDraw(c,s);c.save();c.lineCap=c.lineJoin='round';const p=s.p;
+const edgeRun=(c,L)=>{const E=s=>Math.max(1.5,s.w*.25);for(const s of L)ds(c,{...s,pk:'pen',w:s.w+2*E(s),a:1});for(const s of L)ds(c,{...s,pk:'pen',c:'#ffffff',w:s.w,a:1})};
+const edgeTail=()=>{let j=B.strokes.length;while(j>0&&B.strokes[j-1].pk=='edge')j--;return B.strokes.slice(j)};
+function drawStrokes(c,L){for(let i=0;i<L.length;){if(L[i].pk=='edge'){let j=i;while(j<L.length&&L[j].pk=='edge')j++;edgeRun(c,L.slice(i,j));i=j}else ds(c,L[i++])}}
+function ds(c,s){if(s.pk=='edge'&&s.t=='pen'&&s.p.length)return edgeRun(c,[s]);if(s.t=='pen'&&s.pk&&s.pk!='pen'&&s.p.length)return penDraw(c,s);c.save();c.lineCap=c.lineJoin='round';const p=s.p;
 if(s.t=='stamp'&&s.k){c.translate(p[0][0]-s.z/2,p[0][1]-s.z/2);c.scale(s.z/100,s.z/100);for(const q of stampParts(s.k,s.c)){const P=new Path2D(q.d);if(q.f){c.fillStyle=q.f;c.fill(P)}if(q.s){c.strokeStyle=q.s;c.lineWidth=q.w;c.lineCap=q.c||'round';c.lineJoin=q.j||'round';c.miterLimit=10;c.stroke(P)}}c.restore();return}
 if(s.t=='stamp'||s.t=='text'){c.globalAlpha=s.a??1;c.fillStyle=s.c;c.font=s.t=='stamp'?'64px sans-serif':'bold 76px "Segoe Print","Bradley Hand","Comic Sans MS",cursive';if(s.t=='stamp'){c.textAlign='center';c.textBaseline='middle'}c.fillText(s.ch,p[0][0],p[0][1]);c.restore();return}
 c.globalCompositeOperation=s.t=='eraser'?'destination-out':'source-over';c.globalAlpha=s.a;c.strokeStyle=s.c;c.lineWidth=s.w;c.beginPath();c.moveTo(p[0][0],p[0][1]);
@@ -609,8 +612,8 @@ for(let i=1;i<p.length-1;i++)c.quadraticCurveTo(p[i][0],p[i][1],(p[i][0]+p[i+1][
 if(p.length>1)c.lineTo(p[p.length-1][0],p[p.length-1][1]);c.stroke();c.restore()}
 /* ---------- pen kinds (long-press the pen tool for the menu) ---------- */
 /* id, name, size range class (0 = reference pen, b = bold kinds get a wider max, f = fine kinds get a lower min), default size, default ink density */
-const PKS=[['pen','ペン',0,4,1],['g','Gペン','f',3,1],['pencil','鉛筆','f',2,1],['brush','筆','b',18,.7],['ball','ボールペン','f',2.5,1],['marker','マーカー','b',22,.62],['crayon','クレヨン','b',14,1],['pastel','パステル','b',14,1],['oil','オイルパステル','b',18,.7],['dotted','点線','f',2.5,1],['dash','破線','f',2.5,1],['dot','ドット','f',3,1]];
-const PRG={0:[1,30],b:[1,100],f:[.3,30]},PMIN={pen:2.5,g:1.5,pencil:1.5,ball:1.5,dip:1.5,brush:10,marker:10,crayon:10,pastel:10,oil:10,dotted:2.5,dash:2.5,dot:3};
+const PKS=[['pen','ペン',0,4,1],['g','Gペン','f',3,1],['pencil','鉛筆','f',2,1],['brush','筆','b',18,.7],['edge','ふちどりペン',0,4,1],['marker','マーカー','b',22,.62],['crayon','クレヨン','b',14,1],['pastel','パステル','b',14,1],['oil','オイルパステル','b',18,.7],['dotted','点線','f',2.5,1],['dash','破線','f',2.5,1],['dot','ドット','f',3,1]];
+const PRG={0:[1,30],b:[1,100],f:[.3,30]},PMIN={edge:2.5,pen:2.5,g:1.5,pencil:1.5,ball:1.5,dip:1.5,brush:10,marker:10,crayon:10,pastel:10,oil:10,dotted:2.5,dash:2.5,dot:3};
 let PKC=PKS.some(k=>k[0]==S.pk)?S.pk:'pen';const PWM={};PKS.forEach(k=>PWM[k[0]]=k[3]);Object.assign(PWM,S.pw||{});PKS.forEach(k=>PWM[k[0]]=Math.max(PMIN[k[0]],+PWM[k[0]]||k[3]));
 function penSet(){const k=PKS.find(x=>x[0]==PKC),r=PRG[k[2]];PWM[PKC]=Math.min(r[1],Math.max(PMIN[PKC],+PWM[PKC]||k[3]));TL.pen.w=PWM[PKC];TL.pen.a=k[4]}
 penSet();
@@ -1044,7 +1047,7 @@ if(g.m=='imv'){const[dx,dy]=d2s(e.clientX-g.sx,e.clientY-g.sy);g.e.x=g.ox+dx;g.e
 if(g.m=='imh'){if(Math.hypot(e.clientX-g.sx,e.clientY-g.sy)>8){if(IMS==g.e.id)g={m:'imv',e:g.e,ox:g.e.x,oy:g.e.y,sx:g.sx,sy:g.sy};else g={m:'pan',sx:e.clientX,sy:e.clientY,x:V.x,y:V.y}}return}
 if(g.m=='hold'){if(Math.hypot(e.clientX-g.sx,e.clientY-g.sy)>8){clearTimeout(g.t);g={m:'pan',sx:e.clientX,sy:e.clientY,x:V.x,y:V.y}}return}
 if(g.m=='pan'){V.x=g.x+e.clientX-g.sx;V.y=g.y+e.clientY-g.sy;apply()}
-else if(g.m=='draw'){const s=g.s,q=st(e);if(g.sn)ruAdd(g,q);else s.p.push(q);if(T=='eraser'){ds(bx,{...s,p:s.p.slice(-2)});blit();imErLive(s)}else{blit();ds(cx,s)}}
+else if(g.m=='draw'){const s=g.s,q=st(e);if(g.sn)ruAdd(g,q);else s.p.push(q);if(T=='eraser'){ds(bx,{...s,p:s.p.slice(-2)});blit();imErLive(s)}else{blit();if(s.pk=='edge')edgeRun(cx,[...edgeTail(),s]);else ds(cx,s)}}
 else if(g.m=='move'){const[dx,dy]=d2s(e.clientX-g.sx,e.clientY-g.sy);if(Math.hypot(dx,dy)>4)g.moved=1;g.e.x=g.ox+dx;g.e.y=g.oy+dy;placeEl(g.el,g.e)}});
 const up=e=>{if(!P.has(e.pointerId))return;P.delete(e.pointerId);if(!g)return;const m=g.m;clearTimeout(g.t);const k=g;g=null;
 if(m=='nbtn')nbAct(k);
@@ -1054,7 +1057,7 @@ else if(m=='imh'){const was=IMS==k.e.id;IMS=k.e.id;imDraw();if(was&&k.e.t=='txt'
 else if(m=='hold'&&!T&&!k.el&&IMS){IMS=null;imDraw()}
 else if(m=='hold'&&!T&&k.el){const x=elOf(k.el);if(k.tp)decoTip(x,k.el);else if(x.t=='memo')k.el.querySelector('textarea').focus()}
 else if(m=='tap'){if(T=='txt'){IMS=null;imDraw();txTap(k.o);return}if(T=='bal'){addEl(balNew(st(k.o)))}else if(T=='fusen'){const[w,h]=FSH[FUS.shape],c=st(k.o);addEl({id:uid(),t:'fusen',shape:FUS.shape,c:FUS.c,x:c[0]-w/2,y:c[1]-h/2,w,h})}else{const ct=stCat(STS.k),s={t:'stamp',k:STS.k,c:STS.cc[ct],z:STS.sz[ct],p:[st(k.o)]};ds(bx,s);blit();B.strokes.push(s);hist({k:'s',s})}save()}
-else if(m=='draw'){if(T!='eraser')ds(bx,k.s);blit();B.strokes.push(k.s);hist({k:'s',s:k.s});if(k.s.t=='eraser')imErFinal(k.s);save()}
+else if(m=='draw'){if(k.s.pk=='edge'){B.strokes.push(k.s);redraw()}else{if(T!='eraser')ds(bx,k.s);blit();B.strokes.push(k.s)}hist({k:'s',s:k.s});if(k.s.t=='eraser')imErFinal(k.s);save()}
 else if(m=='move'){k.el.classList.remove('lift');if(k.moved&&(k.e.x!=k.ox||k.e.y!=k.oy))hist({k:'f',e:k.e,a:{x:k.ox,y:k.oy},b:{x:k.e.x,y:k.e.y}});save(!k.moved)}
 else if(m=='pan'||m=='pinch'){B.view={...V};save(1)}
 else if(m=='resize'){layout();B.view={...V};if(k.w!=B.w||k.h!=B.h||k.x0!=B.x0||k.y0!=B.y0)hist({k:'bz',a:{w:k.w,h:k.h,x0:k.x0,y0:k.y0},b:{w:B.w,h:B.h,x0:B.x0,y0:B.y0}});save()}};
