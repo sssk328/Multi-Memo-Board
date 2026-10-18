@@ -78,6 +78,8 @@ h1{font-size:30px;font-weight:700;margin:14px 0 22px;letter-spacing:.02em}
 .tbar{position:fixed;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:20;display:flex}
 .tbar .pill{justify-content:space-around;gap:2px;padding-top:10px}.tbar .pill button{flex:1 1 0;width:auto;max-width:52px;min-width:0}.tbar .pill svg{width:min(32px,78%);height:auto}
 .btop button.on{background:var(--ink);color:var(--bg);border-radius:14px}
+/* wide screens (tablet / landscape): keep the phone-sized toolbars - top one flush right, bottom one centred */
+@media (min-width:500px){.btop{left:auto;right:12px;width:366px}.tbar{left:50%;right:auto;width:374px;transform:translateX(-50%)}}
 .rtip{position:fixed;z-index:60;background:rgba(0,0,0,.5);border-radius:16px;padding:8px;display:flex;gap:4px;color:#fff}
 .rtip:before{content:"";position:absolute;top:-8px;left:var(--ax,50%);margin-left:-8px;border:8px solid transparent;border-top:0;border-bottom-color:rgba(0,0,0,.5)}
 .rtip button{width:52px;height:46px;display:grid;place-items:center;padding:0;border-radius:12px;color:#fff;font-size:11px;background:none;border:0}
@@ -283,7 +285,7 @@ else if(a=='fmenu'){const f=S.files.find(x=>x.id==id);sheet(esc(f.name),[['名�
 else if(a=='imenu'){const i=S.items.find(x=>x.id==id),n=i.type=='note'?S.notes[id]:null,cur=n?n.title:i.name;
 sheet(esc(n?(n.title||'無題のノート'):i.name),[['名称変更',()=>sheet('名称を変更',[['保存',v=>{const t=(v||'').trim();if(n)n.title=t;else i.name=t||i.name;touch(i.id);save();draw()}],['キャンセル']],cur)],...(i.lock?[]:[[i.fav?'お気に入りを解除':'お気に入りに追加',()=>{i.fav=!i.fav;save(1);draw()}]]),['削除',()=>delItem(i)],['キャンセル']])}
 else if(a=='theme'){S.theme=S.theme=='dark'?'light':'dark';applyTheme();save(1)}
-else if(a=='tips')sheet('操作ガイド',[['とじる']],undefined,'<p>・ペンを外した状態でメモ・ノート・ふせん・画像を0.7秒長押しすると移動できます</p><p>・ノート右下の＋をタップすると詳細画面が開き、︙で文字サイズとフォントを変えられます</p><p>・メモのマステ/クリップをタップすると色を変えられます</p><p>・上部の手のアイコン(ハンドツール)を選び、メモ・ノート・ふせん・画像をタップすると、移動・拡大縮小・縦横比の変更・削除ができます</p><p>・指2本で拡大・移動できます</p>');
+else if(a=='tips')sheet('操作ガイド',[['とじる']],undefined,'<p>・ペンを外した状態でメモ・ノート・ふせん・画像を0.35秒長押しすると移動できます</p><p>・ノート右下の＋をタップすると詳細画面が開き、︙で文字サイズとフォントを変えられます</p><p>・メモのマステ/クリップをタップすると色を変えられます</p><p>・上部の手のアイコン(ハンドツール)を選び、メモ・ノート・ふせん・画像をタップすると、移動・拡大縮小・縦横比の変更・削除ができます</p><p>・指2本で拡大・移動できます</p>');
 else if(a=='more')sheet('',[['並び替え',()=>go('sort')],['操作ガイド',()=>{const t=document.createElement('i');t.dataset.a='tips';app.append(t);t.click();t.remove()}]]);
 else if(a=='addfile')ask('新規作成',n=>{S.files.unshift({id:uid(),name:n,date:today(),hue:HUE[S.files.length%4],kind:KF||null});save();draw()});
 else if(a=='openfile'){const f=S.files.find(x=>x.id==id);M?applyMode(f):f.lock?toast('ロック中です(MY ITEMで解除)'):go('file',id)}
@@ -298,7 +300,7 @@ else if(a=='vadd')sheet('ロックに追加',[['ボード',()=>ask('ボード名
 else if(a=='tmenu'){const o=S.files.find(x=>x.id==id)||S.items.find(x=>x.id==id);if(!o)return;sheet(esc(S.files.includes(o)?o.name:itNm(o)),[['復元',()=>restore(o)],['完全に削除',()=>sheet('完全に削除しますか?元に戻せません',[['完全に削除',()=>{S.files.includes(o)?wipeFile(o):wipe(o);save();draw()}],['キャンセル']])],['キャンセル']])}
 });
 let LP=0,lpT;
-app.addEventListener('pointerdown',e=>{const r=e.target.closest('[data-lp]');if(!r)return;LP=0;const x=e.clientX,y=e.clientY;lpT=setTimeout(()=>{LP=1;itemSheet(r.dataset.a,r.dataset.id)},700)});
+app.addEventListener('pointerdown',e=>{const r=e.target.closest('[data-lp]');if(!r)return;LP=0;const x=e.clientX,y=e.clientY;lpT=setTimeout(()=>{LP=1;itemSheet(r.dataset.a,r.dataset.id)},350)});
 ['pointerup','pointercancel','pointermove'].forEach(ev=>app.addEventListener(ev,e=>{if(ev=='pointermove'&&e.buttons===0&&e.pointerType=='mouse')return;clearTimeout(lpT);if(ev!='pointermove')setTimeout(()=>LP=0,50)}));
 function itemSheet(a,id){if(a=='stampmenu')return stampMenu();if(a=='fusenmenu')return fusenMenu();if(a=='balmenu')return balMenu();if(a=='ersmenu')return eraserMenu();if(a=='penmenu')return penMenu();if(a=='openfile')return hueSheet(S.files.find(x=>x.id==id));if(a=='kind')return kindEdit(S.kinds.find(x=>x.id==id));const list=a=='openfile'?S.files:S.items,it=list.find(x=>x.id==id);
 sheet('操作',[...(a=='openitem'&&it.type!='board'?[['Color',()=>hueSheet(it)]]:[]),...(it.lock?[]:[['お気に入り切替',()=>{it.fav=!it.fav;save(1);draw()}]]),['削除',()=>delItem(it)],['キャンセル']])}
@@ -313,7 +315,7 @@ sheet('ラベル名を変更',[['保存',v=>{k.name=(v||'').trim()||k.name;save(
 function kindSheet(f){sheet('ラベル',[...S.kinds.map(k=>[(f.kind==k.id?'✓ ':'')+esc(k.name),()=>{f.kind=f.kind==k.id?null:k.id;save(1);draw()}]),['＋ ラベルを新規作成',()=>ask('ラベル名',n=>{const k={id:uid(),name:n};S.kinds.push(k);f.kind=k.id;save(1);draw()})],['キャンセル']]);
 const ov=document.querySelector('.ov');let lt;
 ov.querySelectorAll('button').forEach((b,i)=>{const k=S.kinds[i];if(!k||i>=S.kinds.length)return;
-b.addEventListener('pointerdown',()=>{clearTimeout(lt);lt=setTimeout(()=>{KLP=1;kindEdit(k,()=>kindSheet(f))},700)});
+b.addEventListener('pointerdown',()=>{clearTimeout(lt);lt=setTimeout(()=>{KLP=1;kindEdit(k,()=>kindSheet(f))},350)});
 ['pointerup','pointercancel','pointerleave','pointermove'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(lt)))})}
 const setHue=(id,h)=>{const f=S.files.find(x=>x.id==id)||S.items.find(x=>x.id==id);f.hue=h;save(1);document.querySelector('.ov')?.remove();draw()};
 function hueSheet(f){sheet('Color',[['とじる']],undefined,`<div class="hues">${[...Array(12)].map((_,i)=>`<span style="background:${hsv(i*30)}" onclick="setHue('${f.id}',${i*30})"></span>`).join('')}${[30,50,70].map(l=>`<span style="background:${hsv('g'+l)}" onclick="setHue('${f.id}','g${l}')"></span>`).join('')}</div>`)}
@@ -1001,7 +1003,7 @@ if(T&&T!='stamp'&&T!='fusen'&&T!='bal'&&T!='txt'){stroke0(o);return}
 if(T=='txt'){const x0=el&&elOf(el);if(x0&&x0.t=='txt'){g={m:'imh',el,e:x0,sx:e.clientX,sy:e.clientY};return}}
 if(T){g={m:'tap',o};return}
 if(HT){const x=el&&elOf(el);g=x?{m:'imh',el,e:x,sx:e.clientX,sy:e.clientY}:{m:'hold',el:null,sx:e.clientX,sy:e.clientY,t:0};return}
-g={m:'hold',el,sx:e.clientX,sy:e.clientY,tp:e.target.closest('.deco'),t:el?setTimeout(()=>longNone(el),700):0}});
+g={m:'hold',el,sx:e.clientX,sy:e.clientY,tp:e.target.closest('.deco'),t:el?setTimeout(()=>longNone(el),350):0}});
 function nbAct(k){const x=elOf(k.el);if(!x)return;
 if(k.nb.dataset.nb=='open'){const it=S.items.find(i=>i.id==x.nid);if(!S.notes[x.nid]||(it&&(it.lock||it.del)&&!H.some(y=>y[0]=='vault')))toast('このノートは開けません');else go('note',x.nid)}
 else noteTip(x,k.el,k.nb)}
