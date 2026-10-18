@@ -267,7 +267,7 @@ function place(o,ok){if(fileOf(o)&&!fileOf(o).del)return ok();const fs=S.files.f
 const restore=o=>{const fin=()=>{const pp=S.items.find(x=>x.id==o.parent);if(o.parent&&(!pp||!anc(pp)))delete o.parent;o.del=0;save();draw();toast('復元しました')};if(S.files.includes(o)||o.lock)fin();else place(o,fin)};
 const MN={fav:'お気に入り',lock:'ロック',del:'削除'};
 function applyMode(f){if(M=='fav'){f.fav=!f.fav;save();draw()}else if(M=='lock'){f.lock=!f.lock;save();draw()}else if(M=='del')delFile(f)}
-function vNote(nid){const n=S.notes[nid];app.innerHTML=`<div class="pg nd"><div class="top"><button data-a="back" class="ib">${I.back}</button><small>${n.date}</small></div><input id="nt" placeholder="タイトル" value="${esc(n.title)}"><textarea id="nbd" placeholder="ここに長文を記録できます">${esc(n.body)}</textarea></div>`;
+function vNote(nid){const n=S.notes[nid];app.innerHTML=`<div class="pg nd"><div class="top"><button data-a="back" class="ib">${I.back}</button><small>${n.date}</small></div><input id="nt" placeholder="タイトル" value="${esc(n.title)}"><textarea id="nbd" placeholder="">${esc(n.body)}</textarea></div>`;
 const up=()=>{n.title=$('#nt').value;n.body=$('#nbd').value;if(n.title.trim()||n.body.trim()){n.saved=1;if(!S.items.some(i=>i.id==nid))S.items.push({id:nid,file:n.file,...(n.parent?{parent:n.parent}:{}),type:'note',color:2,hue:'g100',date:today(),...(n.lock?{lock:1}:{})})}save();const sm=document.querySelector('.top small');if(sm)sm.textContent=n.date};
 $('#nt').oninput=$('#nbd').oninput=up}
 function newNote(fid,lk,pid){const id=uid();S.notes[id]={title:'',body:'',date:today(),saved:0,file:fid,parent:pid,lock:lk?1:0};return id}
@@ -609,7 +609,7 @@ for(let i=1;i<p.length-1;i++)c.quadraticCurveTo(p[i][0],p[i][1],(p[i][0]+p[i+1][
 if(p.length>1)c.lineTo(p[p.length-1][0],p[p.length-1][1]);c.stroke();c.restore()}
 /* ---------- pen kinds (long-press the pen tool for the menu) ---------- */
 /* id, name, size range class (0 = reference pen, b = bold kinds get a wider max, f = fine kinds get a lower min), default size, default ink density */
-const PKS=[['pen','ペン',0,4,1],['g','Gペン','f',3,1],['pencil','鉛筆','f',2,1],['brush','筆','b',18,.7],['ball','ボールペン','f',2.5,1],['dip','つけペン','f',2,1],['marker','マーカー','b',22,.62],['crayon','クレヨン','b',14,1],['pastel','パステル','b',14,1],['oil','オイルパステル','b',18,.7],['dotted','点線','f',2.5,1],['dash','破線','f',2.5,1],['dot','ドット','f',3,1]];
+const PKS=[['pen','ペン',0,4,1],['g','Gペン','f',3,1],['pencil','鉛筆','f',2,1],['brush','筆','b',18,.7],['ball','ボールペン','f',2.5,1],['marker','マーカー','b',22,.62],['crayon','クレヨン','b',14,1],['pastel','パステル','b',14,1],['oil','オイルパステル','b',18,.7],['dotted','点線','f',2.5,1],['dash','破線','f',2.5,1],['dot','ドット','f',3,1]];
 const PRG={0:[1,30],b:[1,100],f:[.3,30]},PMIN={pen:2.5,g:1.5,pencil:1.5,ball:1.5,dip:1.5,brush:10,marker:10,crayon:10,pastel:10,oil:10,dotted:2.5,dash:2.5,dot:3};
 let PKC=PKS.some(k=>k[0]==S.pk)?S.pk:'pen';const PWM={};PKS.forEach(k=>PWM[k[0]]=k[3]);Object.assign(PWM,S.pw||{});PKS.forEach(k=>PWM[k[0]]=Math.max(PMIN[k[0]],+PWM[k[0]]||k[3]));
 function penSet(){const k=PKS.find(x=>x[0]==PKC),r=PRG[k[2]];PWM[PKC]=Math.min(r[1],Math.max(PMIN[PKC],+PWM[PKC]||k[3]));TL.pen.w=PWM[PKC];TL.pen.a=k[4]}
@@ -650,8 +650,15 @@ const md=[...seg].sort((a,b)=>a-b)[seg.length>>1]||1,out=[];let k=0;
 for(let i=0;i<S.n;i++){const d=S.D[i]/(S.L||1)*T;while(k<seg.length-1&&cum[k+1]<d)k++;let v=0,c=0;for(let j=Math.max(0,k-2);j<=Math.min(seg.length-1,k+2);j++){v+=seg[j];c++}v=c?v/c:md;out.push(Math.max(0,Math.min(1,1.15-.55*v/Math.max(md,.5))))}
 return out}
 function penDraw(c,s){const k=s.pk,w=s.w,R=pRng(s.sd||1),p=s.p;
-if(k=='g'){const S=pDense(p,Math.max(.6,w*.12)),ls=Math.min(S.L*.3,w*4+6),le=Math.min(S.L*.5,w*9+10),e=t=>Math.sin(Math.max(0,Math.min(1,t))*Math.PI/2);
-c.save();c.globalAlpha=s.a;c.fillStyle=s.c;pPoly(c,S,i=>w*(.1+.9*Math.min(e(ls>0?S.D[i]/ls:1),e(le>0?(S.L-S.D[i])/le:1))));c.restore();return}
+if(k=='g'){const S=pDense(p,Math.max(.6,w*.12)),e=t=>Math.sin(Math.max(0,Math.min(1,t))*Math.PI/2),
+sg=[];for(let i=1;i<p.length;i++)sg.push(Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]));
+const md=[...sg].sort((a,b)=>a-b)[sg.length>>1]||0,kk=Math.min(3,sg.length);let la=0;for(let i=0;i<kk;i++)la+=sg[sg.length-1-i];la=kk?la/kk:0;
+/* taper only for quick / light strokes: overall speed (spacing of pointer samples) and a flick at the very end */
+const fast=Math.max(0,Math.min(1,(md-7)/9)),flick=sg.length>=5&&md>0?Math.max(0,Math.min(1,(la/md-1.15)/1.2)):0,tS=fast,tE=Math.max(fast,flick),
+ls=Math.min(S.L*.3,w*4+6),le=Math.min(S.L*.5,w*9+10),
+wf=i=>w*Math.min(1-.9*tS*(1-e(ls>0?S.D[i]/ls:1)),1-.9*tE*(1-e(le>0?(S.L-S.D[i])/le:1)));
+c.save();c.globalAlpha=s.a;c.fillStyle=s.c;pPoly(c,S,wf);
+for(const i of[0,S.n-1]){c.beginPath();c.arc(S.X[i],S.Y[i],wf(i)/2,0,6.2832);c.fill()}c.restore();return}
 if(k=='dotted'||k=='dash'||k=='dot'){const S=pDense(p,1),pitch=k=='dash'?w*3.6:w*2,L=k=='dash'?w*2:w,T=w;c.save();c.globalAlpha=s.a;c.fillStyle=s.c;
 let j=0;const at=d=>{while(j<S.n-2&&S.D[j+1]<d)j++;const jj=Math.min(S.n-1,j+1),a=S.D[j],b=S.D[jj],t=b>a?Math.min(1,Math.max(0,(d-a)/(b-a))):0;return[S.X[j]+(S.X[jj]-S.X[j])*t,S.Y[j]+(S.Y[jj]-S.Y[j])*t,S.TA[j]]};
 for(let m=0;;m++){const d=m*pitch;if(d>S.L+1e-6)break;const[x,y,a]=S.n<2?[S.X[0],S.Y[0],0]:at(d);c.save();c.translate(x,y);c.rotate(a);
@@ -666,8 +673,10 @@ else if(k=='ball'){const S=pDense(p,Math.max(.6,w*.15)),lw=w*.6,
 fs=pBlob(p,w,0),fe=pBlob(p,w,1),Rs=lw/2+fs*w*1.6,Re=lw/2+fe*w*2,hs=(d,R)=>d<=R?Math.sqrt(Math.max(0,R*R-(R-d)*(R-d))):R*(.5+.5*Math.cos(Math.PI*Math.min(1,(d-R)/(R*2.6))));
 const wf=i=>Math.max(lw,2*hs(S.D[i],Rs),2*hs(S.L-S.D[i],Re));pPoly(o,S,wf);
 for(const i of[0,S.n-1]){o.beginPath();o.arc(S.X[i],S.Y[i],lw/2,0,6.2832);o.fill()}}
-else if(k=='pencil'){const S=pDense(p,Math.max(.5,w*.12));o.globalAlpha=.85;o.lineWidth=w*.55;pLine(o,S,0,S.n-1);const nd=Math.max(2,Math.ceil(w*.9));
-for(let i=0;i<S.n;i++)for(let m=0;m<nd;m++){const a=R()*6.2832,r=Math.sqrt(R())*w*.52,z=Math.max(.4,w*.14)*(.6+R()*.8);o.globalAlpha=.35+R()*.6;pDot(o,S.X[i]+Math.cos(a)*r,S.Y[i]+Math.sin(a)*r,z/2)}}
+else if(k=='pencil'){const S=pDense(p,Math.max(.5,w*.12));o.globalAlpha=.82;o.lineWidth=w;pLine(o,S,0,S.n-1);
+/* graphite grain stays inside the stroke: tiny pin-holes and a few darker specks, edges stay tight */
+const nd=Math.max(2,Math.ceil(w*.3)+1),hl=(f,al,z0)=>{for(let i=0;i<S.n;i++)for(let m=0;m<nd*f;m++){const off=(R()-.5)*w*.96,x=S.X[i]-Math.sin(S.TA[i])*off,y=S.Y[i]+Math.cos(S.TA[i])*off,z=Math.max(.3,w*z0)*(.5+R());o.globalAlpha=al*(.4+R()*.6);pDot(o,x,y,z/2)}};
+o.globalCompositeOperation='destination-out';hl(1,.7,.1);o.globalCompositeOperation='source-over';hl(.5,.5,.09)}
 else if(k=='crayon'){const S=pDense(p,Math.max(.7,w*.07));o.globalAlpha=.12;o.lineWidth=w*1.05;pLine(o,S,0,S.n-1);o.globalAlpha=.32;o.lineWidth=w*.78;pLine(o,S,0,S.n-1);const nd=Math.ceil(w*.8)+2;
 for(let i=0;i<S.n;i++)for(let m=0;m<nd;m++){const a=R()*6.2832,r=Math.sqrt(R())*w*.5,z=Math.max(.6,w*.1)*(.6+R()*.9);o.globalAlpha=.4+R()*.55;pDot(o,S.X[i]+Math.cos(a)*r,S.Y[i]+Math.sin(a)*r,z/2)}}
 else if(k=='pastel'){const S=pDense(p,Math.max(.6,w*.05)),nd=Math.ceil(w*.55)+2;
